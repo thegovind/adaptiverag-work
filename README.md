@@ -50,7 +50,47 @@ The project includes complete **azd** infrastructure templates, so `azd up` depl
 > 
 
 
-[Features](#features) • [Architecture](#architecture-diagram) • [Getting Started](#getting-started) • [Guidance](#guidance)
+[Architecture](#️-architecture) • [User Interface](#user-interface) • [Features](#features) • [Getting Started](#getting-started) • [Guidance](#guidance)
+
+---
+
+## 🏗️ Architecture
+
+### Platform Architecture Diagram
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Azure-Samples/adaptive-rag-workbench/main/.github/assets/architecture.png" alt="Architecture" width="90%"><br>
+  <em>Adaptive RAG Workbench · Architecture</em>
+</p>
+
+### Detailed Architecture Diagram
+
+```mermaid
+graph TB
+    A[Frontend - Azure, Copilot Studio] --> B[Backend - Container Apps]
+    B --> C[Semantic Kernel or LangGraph]
+    C --> D[Orchestrator Agent]
+    D --> E[Retriever Agent]
+    D --> F[Writer Agent]
+    D --> G[Verifier Agent]
+    D --> H[Curator Agent]
+    E --> I[Azure AI Search]
+    F --> J[Azure AI Foundry]
+    G --> J
+    H --> I
+    I --> K[Agentic Retrieval, Query Rewrite]
+    J --> L[Models]
+```
+
+### Technology Stack
+
+- **Frontend**: TypeScript, React
+- **Backend**: FastAPI
+- **AI Agent Orchestration**: Azure AI Foundry Agent Service, Semantic Kernel, LangGraph (coming soon)
+- **Retrieval pipeline**: Azure AI Search with Agentic retrieval, query rewrite, hybrid search, and others
+- **Document Processing**: Azure AI Document Intelligence
+- **Deployment**: Azure Container Apps, Docker-ready architecture
+- **Integration**: MCP, A2A, Copilot Studio (coming soon)
 
 ---
 
@@ -95,45 +135,6 @@ The Adaptive RAG Workbench provides an intuitive web interface for exploring adv
 | **Adaptive KB Management** | Intelligent document processing and curation | Document management, metadata extraction | Automated processing, version control, metadata enrichment |
 
 ---
-
-## 🏗️ Architecture
-
-### Detailed Architecture Diagram
-
-```mermaid
-graph TB
-    A[Frontend (Azure, Copilot Studio)] --> B[Backend (Container Apps)]
-    B --> C[Semantic Kernel or LangGraph]
-    C --> D[Orchestrator Agent]
-    D --> E[Retriever Agent]
-    D --> F[Writer Agent]
-    D --> G[Verifier Agent]
-    D --> H[Curator Agent]
-    E --> I[Azure AI Search]
-    F --> J[Azure AI Foundry]
-    G --> J
-    H --> I
-    I --> K[Agentic Retrieval, Query Rewrite]
-    J --> L[Models]
-```
-
-### Technology Stack
-
-- **Frontend**: TypeScript, React
-- **Backend**: FastAPI
-- **AI Agent Orchestration**: Azure AI Foundry Agent Service, Semantic Kernel, LangGraph (coming soon)
-- **Retrieval pipeline**: Azure AI Search with Agentic retrieval, query rewrite, hybrid search, and others
-- **Document Processing**: Azure AI Document Intelligence
-- **Deployment**: Azure Container Apps, Docker-ready architecture
-- **Integration**: MCP, A2A, Copilot Studio (coming soon)
-
-### Platform Architecture Diagram
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Azure-Samples/adaptive-rag-workbench/main/.github/assets/architecture.png" alt="Architecture" width="70%"><br>
-  <em>Adaptive RAG Workbench · Architecture</em>
-</p>
-
 
 ## Getting Started
 
