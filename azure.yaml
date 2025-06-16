@@ -1,0 +1,43 @@
+
+name: adaptive-rag-workbench
+metadata:
+  template: adaptive-rag-workbench@0.0.1-beta
+services:
+  api:
+    project: ./backend
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: ./backend
+  web:
+    project: ./frontend
+    language: js
+    host: staticwebapp
+    dist: dist
+infra:
+  provider: bicep
+  path: infra
+  module: main
+pipeline:
+  provider: github
+hooks:
+  preprovision:
+    shell: sh
+    run: |
+      echo "Installing backend dependencies..."
+      cd backend && poetry install
+  postprovision:
+    shell: sh
+    run: |
+      echo "Setting up search index..."
+      cd backend && poetry run python -c "
+      import asyncio
+      from app.ingestion.indexer_job import create_search_index
+      asyncio.run(create_search_index())
+      "
+  prepackage:
+    shell: sh
+    run: |
+      echo "Building frontend..."
+      cd frontend && npm install && npm run build
