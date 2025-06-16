@@ -1,0 +1,46 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from .api.chat import router as chat_router
+from .api.ingest import router as ingest_router
+from .core.globals import initialize_kernel, set_agent_registry
+
+try:
+    from .agents.registry import AgentRegistry
+except ImportError:
+    AgentRegistry = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    kernel = initialize_kernel()
+    if AgentRegistry:
+        try:
+            config_path = "app/agents/agent_configs.yaml"
+            agent_registry = await AgentRegistry.create_from_yaml(kernel, config_path)
+            set_agent_registry(agent_registry)
+            print("SK Agent Registry initialized successfully")
+        except Exception as e:
+            print(f"Warning: Could not initialize SK Agent Registry: {e}")
+    
+    yield
+
+app = FastAPI(title="Adaptive RAG Workbench", version="1.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(chat_router, prefix="/api")
+app.include_router(ingest_router, prefix="/api")
+
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+@app.get("/")
+async def root():
+    return {"message": "Adaptive RAG Workbench API", "version": "1.0.0"}

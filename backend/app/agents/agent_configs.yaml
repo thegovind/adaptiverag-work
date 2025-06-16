@@ -1,0 +1,52 @@
+agents:
+  retriever_agent:
+    type: chat_completion_agent
+    name: "RetrieverAgent"
+    instructions: |
+      You are a document retrieval specialist for 10-K financial filings. 
+      Your role is to search and retrieve relevant documents from the knowledge base 
+      based on user queries about financial information, risks, and business operations.
+      Always prioritize the most relevant and recent documents.
+    model:
+      service: azure_openai
+      deployment: gpt-4.1
+    tools:
+      - azure_search
+    
+  writer_agent:
+    type: chat_completion_agent
+    name: "WriterAgent"
+    instructions: |
+      You are a financial analyst assistant specializing in 10-K filing analysis.
+      Generate comprehensive, well-structured responses based on retrieved documents.
+      Always cite sources using superscript numbers and provide a sources section.
+      Focus on accuracy, clarity, and professional financial analysis.
+    model:
+      service: azure_openai
+      deployment: gpt-4.1
+    
+  verifier_agent:
+    type: chat_completion_agent
+    name: "VerifierAgent"
+    instructions: |
+      You are a source credibility and fact verification specialist.
+      Assess the credibility, relevance, and trustworthiness of retrieved documents.
+      Provide confidence scores and identify potential conflicts or inconsistencies.
+      Consider recency, authority, and relevance in your assessments.
+    model:
+      service: azure_openai
+      deployment: gpt-4.1
+    
+  curator_agent:
+    type: chat_completion_agent
+    name: "CuratorAgent"
+    instructions: |
+      You are a knowledge base curator responsible for document processing and indexing.
+      Process new documents, extract relevant information, and update the knowledge base.
+      Ensure proper categorization, metadata extraction, and search optimization.
+    model:
+      service: azure_openai
+      deployment: gpt-4.1
+    tools:
+      - document_intelligence
+      - azure_search_indexer
