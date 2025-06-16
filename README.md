@@ -25,12 +25,15 @@ urlFragment: adaptive-rag-workbench
 -->
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Microsoft-Solution%20Accelerator-blue?style=for-the-badge&logo=microsoft" alt="Microsoft Solution Accelerator"><br>
+  <img src="https://raw.githubusercontent.com/Azure-Samples/adaptive-rag-workbench/main/.github/assets/arag-logo.png" alt="Adaptive RaG logo" width="150"><br>
   <b>Adaptive RAG Workbench · Enterprise RAG Solution Accelerator</b>
 </p>
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=Azure-Samples/adaptive-rag-workbench&machine=basicLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json)
 [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/Azure-Samples/adaptive-rag-workbench)
+
+> 🚀 **Turbo charged by [GitHub Copilot](https://github.com/features/copilot) and [Cognition Devin](https://aka.ms/devin)**  
+> 📊 **Explore detailed architecture**: [DeepWiki](https://deepwiki.com/Azure-Samples/adaptive-rag-workbench)
 
 **Adaptive RAG Workbench** is a comprehensive Microsoft solution accelerator that demonstrates three advanced **Retrieval-Augmented Generation (RAG)** patterns for enterprise AI applications. Built with Microsoft Agent Platform capabilities, including **Azure AI Foundry Agent Service**, **M365SDK for Copilot Studio**, and open source orchestration frameworks, this solution accelerator provides production-ready patterns for:
 
@@ -45,27 +48,6 @@ The project includes complete **azd** infrastructure templates, so `azd up` depl
 > 
 > This repository is under **active development**. 
 > 
-> **What to expect:**
-> - **Frequent updates** with new features and improvements
-> - **Breaking changes** to APIs, configuration, and deployment scripts
-> - **Experimental features** that may be modified or removed
-> - **Documentation** may lag behind implementation
-> 
-> **Recommendations:**
-> - ⭐ **Star this repo** to track updates and releases
-> - 🔔 **Watch for releases** to get notified of stable versions
-> - 📋 **Pin to specific commits** for experiments
-> 
-> We're moving fast to deliver the latest in Microsoft's Agent Platform capabilities!
-
-> **Important Security Notice**
-> This repository is intended for learning and demonstration purposes. **Do not** deploy it to production without a thorough security review. At a minimum you should:
->
-> * Enable **Managed Identity** for all Azure service connections
-> * Implement **Private Endpoints** for network isolation
-> * Configure **Azure Key Vault** for secure secret management
-> * Enable **Application Insights** and **Azure Monitor** for observability
-> * Review and implement proper **RBAC** policies
 
 
 [Features](#features) • [Architecture](#architecture-diagram) • [Getting Started](#getting-started) • [Guidance](#guidance)
@@ -120,19 +102,19 @@ The Adaptive RAG Workbench provides an intuitive web interface for exploring adv
 
 ```mermaid
 graph TB
-    A[React Frontend] --> B[FastAPI Backend]
-    B --> C[Semantic Kernel]
+    A[Frontend (Azure, Copilot Studio)] --> B[Backend (Container Apps)]
+    B --> C[Semantic Kernel or LangGraph]
     C --> D[Orchestrator Agent]
     D --> E[Retriever Agent]
     D --> F[Writer Agent]
     D --> G[Verifier Agent]
     D --> H[Curator Agent]
     E --> I[Azure AI Search]
-    F --> J[Azure OpenAI]
+    F --> J[Azure AI Foundry]
     G --> J
     H --> I
-    I --> K[Vector Database]
-    J --> L[GPT-4 & Embeddings]
+    I --> K[Agentic Retrieval, Query Rewrite]
+    J --> L[Models]
 ```
 
 ### Technology Stack
@@ -145,72 +127,12 @@ graph TB
 - **Deployment**: Azure Container Apps, Docker-ready architecture
 - **Integration**: MCP, A2A, Copilot Studio (coming soon)
 
-### Azure Architecture Diagram
+### Platform Architecture Diagram
 
-```mermaid
-flowchart TB
-    %% User Interface Layer
-    subgraph ui["User Interface (React + TypeScript)"]
-        Web["Web Application<br/>React 18 + Tailwind CSS"]
-        Components["UI Components<br/>Microsoft Fluent UI"]
-    end
-
-    %% Application Layer
-    subgraph app["Application Layer (Azure)"]
-        API["FastAPI Backend<br/>Azure App Service"]
-        Orchestrator["Orchestrator Agent<br/>Semantic Kernel"]
-        
-        subgraph agents["AI Agents"]
-            Retriever["Retriever Agent<br/>Document Search"]
-            Writer["Writer Agent<br/>Content Generation"]
-            Verifier["Verifier Agent<br/>Fact Checking"]
-            Curator["Curator Agent<br/>KB Management"]
-        end
-    end
-
-    %% Azure AI Services
-    subgraph azure["Azure AI Services"]
-        OpenAI["Azure OpenAI<br/>GPT-4, Embeddings"]
-        Search["Azure AI Search<br/>Vector + Hybrid Search"]
-        Document["Azure AI Document Intelligence<br/>Document Processing"]
-        Foundry["Azure AI Foundry<br/>Agent Service (Coming Soon)"]
-    end
-
-    %% Storage Layer
-    subgraph storage["Storage & Data"]
-        Cosmos["Azure Cosmos DB<br/>Document Metadata"]
-        Storage["Azure Storage<br/>Document Blobs"]
-        KeyVault["Azure Key Vault<br/>Secrets Management"]
-    end
-
-    %% Monitoring
-    subgraph monitoring["Observability"]
-        Insights["Application Insights<br/>Telemetry & Logs"]
-        Monitor["Azure Monitor<br/>Metrics & Alerts"]
-    end
-
-    %% Connections
-    Web --> API
-    API --> Orchestrator
-    Orchestrator --> agents
-    agents --> OpenAI
-    agents --> Search
-    agents --> Document
-    agents --> Cosmos
-    agents --> Storage
-    API --> KeyVault
-    API --> Insights
-    Insights --> Monitor
-
-    %% Styling
-    classDef azure fill:#0078d4,stroke:#005ba1,stroke-width:2px,color:#fff
-    classDef storage fill:#00bcf2,stroke:#0099bc,stroke-width:2px,color:#fff
-    classDef monitoring fill:#ff6900,stroke:#cc5500,stroke-width:2px,color:#fff
-    
-    class OpenAI,Search,Document azure
-    class Cosmos,Storage,KeyVault storage
-    class Insights,Monitor monitoring
-```
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Azure-Samples/adaptive-rag-workbench/main/.github/assets/architecture.png" alt="Architecture" width="70%"><br>
+  <em>Adaptive RAG Workbench · Architecture</em>
+</p>
 
 
 ## Getting Started
