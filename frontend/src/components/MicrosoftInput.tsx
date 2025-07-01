@@ -241,21 +241,16 @@ export function MicrosoftInput({
                   <SelectContent className="w-64 p-0 border border-gray-300 shadow-md">
                     <div className="py-1 px-2">
                       {primaryModels.map((model) => (
-                        <SelectItem key={model.id} value={model.id} className="py-2 px-3 hover:bg-gray-100 rounded-md cursor-pointer">
-                          <div className="flex flex-col">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">{model.name}</span>
-                              {model.isPro && (
-                                <span className="text-xs font-medium text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">PRO</span>
-                              )}
-                            </div>
-                            {model.description && (
-                              <span className="text-xs text-gray-500 mt-0.5">{model.description}</span>
+                        <SelectItem key={model.id} value={model.id} className="py-1.5 px-3 hover:bg-gray-100 rounded-md cursor-pointer">
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-medium text-sm">{model.name}</span>
+                            {model.isPro && (
+                              <span className="text-[10px] font-medium text-purple-700 bg-purple-100 px-1 py-0.5 rounded">PRO</span>
                             )}
                           </div>
                         </SelectItem>
                       ))}
-                      <SelectItem value="more-models" className="py-2 px-3 hover:bg-gray-100 rounded-md cursor-pointer border-t border-gray-200 mt-1">
+                      <SelectItem value="more-models" className="py-1.5 px-3 hover:bg-gray-100 rounded-md cursor-pointer border-t border-gray-200 mt-1">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-gray-700">More models</span>
                           {showMoreModels ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -266,16 +261,11 @@ export function MicrosoftInput({
                     {showMoreModels && (
                       <div className="border-t border-gray-200 py-1 px-2 bg-gray-50">
                         {additionalModels.map((model) => (
-                          <SelectItem key={model.id} value={model.id} className="py-2 px-3 hover:bg-gray-100 rounded-md cursor-pointer">
-                            <div className="flex flex-col">
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-sm">{model.name}</span>
-                                {model.isPro && (
-                                  <span className="text-xs font-medium text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">PRO</span>
-                                )}
-                              </div>
-                              {model.description && (
-                                <span className="text-xs text-gray-500 mt-0.5">{model.description}</span>
+                          <SelectItem key={model.id} value={model.id} className="py-1.5 px-3 hover:bg-gray-100 rounded-md cursor-pointer">
+                            <div className="flex items-center justify-between w-full">
+                              <span className="font-medium text-sm">{model.name}</span>
+                              {model.isPro && (
+                                <span className="text-[10px] font-medium text-purple-700 bg-purple-100 px-1 py-0.5 rounded">PRO</span>
                               )}
                             </div>
                           </SelectItem>
