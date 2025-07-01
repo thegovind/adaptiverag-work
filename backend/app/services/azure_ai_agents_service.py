@@ -24,10 +24,10 @@ class AzureAIAgentsService:
     async def initialize(self):
         """Initialize the Azure AI Agents service"""
         try:
-            self.project_client = AIProjectClient(
-                endpoint=os.environ.get("PROJECT_ENDPOINT", settings.openai_endpoint),
-                credential=DefaultAzureCredential(),
-            )
+            from .azure_ai_project_service import azure_ai_project_service
+            await azure_ai_project_service.initialize()
+            
+            self.project_client = azure_ai_project_service.get_project_client()
             self.agents_client = self.project_client.agents
             logger.info("Azure AI Agents service initialized successfully")
         except Exception as e:
@@ -38,27 +38,38 @@ class AzureAIAgentsService:
                                   question: str, 
                                   session_id: str,
                                   tracking_id: Optional[str] = None) -> Dict[str, Any]:
-        """Process deep research using Azure AI Agents (simplified implementation for now)"""
+        """Process deep research using Azure AI Agents"""
         try:
             logger.info(f"Processing deep research question: {question}")
             
-            answer = f"Deep research response for: {question}\n\nThis is a placeholder response demonstrating Azure AI Agents integration. The actual implementation will use Azure AI Agents for comprehensive research with citations."
+            agent = await self.agents_client.create_agent(
+                model="gpt-4",
+                name="Deep Research Agent",
+                instructions="You are a deep research assistant. Provide comprehensive, well-sourced answers with citations."
+            )
             
-            citations = [{
-                'id': '1',
-                'title': 'Azure AI Agents Documentation',
-                'content': 'Azure AI Agents provide comprehensive research capabilities',
-                'source': 'https://docs.microsoft.com/azure/ai-agents',
-                'url': 'https://docs.microsoft.com/azure/ai-agents',
-                'score': 1.0,
-                'deep_research': True
-            }]
+            thread = await self.agents_client.create_thread()
             
-            token_usage = {
-                "prompt_tokens": 150,
-                "completion_tokens": 300,
-                "total_tokens": 450
-            }
+            await self.agents_client.create_message(
+                thread_id=thread.id,
+                role="user",
+                content=question
+            )
+            
+            run = await self.agents_client.create_run(
+                thread_id=thread.id,
+                assistant_id=agent.id
+            )
+            
+            completed_run = await self.agents_client.get_run(
+                thread_id=thread.id,
+                run_id=run.id
+            )
+            
+            messages = await self.agents_client.list_messages(thread_id=thread.id)
+            answer = messages.data[0].content[0].text.value if messages.data else "No response generated"
+            
+            token_usage = self._extract_token_usage_from_run(completed_run)
             
             if tracking_id:
                 token_tracker.record_token_usage(
@@ -70,7 +81,7 @@ class AzureAIAgentsService:
             
             return {
                 "answer": answer,
-                "citations": citations,
+                "citations": [],  # Extract from agent response
                 "query_rewrites": [question],
                 "token_usage": token_usage,
                 "success": True,

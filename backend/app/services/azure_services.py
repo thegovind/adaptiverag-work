@@ -2,7 +2,11 @@ from azure.search.documents import SearchClient
 from azure.search.documents.aio import SearchClient as AsyncSearchClient
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents.models import VectorizedQuery
-from azure.ai.documentintelligence import DocumentIntelligenceClient
+try:
+    from azure.ai.documentintelligence import DocumentIntelligenceClient
+except ImportError:
+    # Fallback for missing document intelligence module
+    DocumentIntelligenceClient = None
 from azure.identity import DefaultAzureCredential, ClientSecretCredential
 from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI, AsyncAzureOpenAI
@@ -171,24 +175,40 @@ class AzureServiceManager:
                 logger.warning("Document Intelligence endpoint not configured")
                 self.form_recognizer_client = None
             
-            # Initialize OpenAI clients
-            if hasattr(settings, 'openai_endpoint') and settings.openai_endpoint:
-                self.openai_client = AzureOpenAI(
-                    azure_endpoint=settings.openai_endpoint,
-                    api_key=getattr(settings, 'openai_api_key', ''),
-                    api_version=getattr(settings, 'openai_api_version', '2024-02-01')
-                )
+            # Initialize Azure AI Project service for instrumented OpenAI clients
+            try:
+                from .azure_ai_project_service import azure_ai_project_service
+                await azure_ai_project_service.initialize()
                 
-                self.async_openai_client = AsyncAzureOpenAI(
-                    azure_endpoint=settings.openai_endpoint,
-                    api_key=getattr(settings, 'openai_api_key', ''),
-                    api_version=getattr(settings, 'openai_api_version', '2024-02-01')
-                )
-                logger.info("Azure OpenAI clients initialized")
-            else:
-                logger.warning("Azure OpenAI endpoint not configured")
-                self.openai_client = None
-                self.async_openai_client = None
+                if azure_ai_project_service.is_instrumented():
+                    self.openai_client = azure_ai_project_service.get_chat_client()
+                    self.async_openai_client = azure_ai_project_service.get_chat_client()
+                    logger.info("Azure AI Project clients initialized with telemetry")
+                else:
+                    raise Exception("Azure AI Project service not properly instrumented")
+                    
+            except Exception as e:
+                logger.warning(f"Failed to initialize Azure AI Project service: {e}")
+                logger.info("Falling back to regular OpenAI clients")
+                
+                # Fallback to regular OpenAI clients
+                if hasattr(settings, 'openai_endpoint') and settings.openai_endpoint:
+                    self.openai_client = AzureOpenAI(
+                        azure_endpoint=settings.openai_endpoint,
+                        api_key=getattr(settings, 'openai_api_key', ''),
+                        api_version=getattr(settings, 'openai_api_version', '2024-02-01')
+                    )
+                    
+                    self.async_openai_client = AsyncAzureOpenAI(
+                        azure_endpoint=settings.openai_endpoint,
+                        api_key=getattr(settings, 'openai_api_key', ''),
+                        api_version=getattr(settings, 'openai_api_version', '2024-02-01')
+                    )
+                    logger.info("Azure OpenAI clients initialized (fallback)")
+                else:
+                    logger.warning("Azure OpenAI endpoint not configured")
+                    self.openai_client = None
+                    self.async_openai_client = None
             
             # Ensure search index exists
             await self.ensure_search_index_exists()
@@ -788,4 +808,4 @@ async def get_azure_service_manager() -> AzureServiceManager:
 
 async def cleanup_azure_services():
     """Cleanup Azure services"""
-    await azure_service_manager.cleanup() 
+    await azure_service_manager.cleanup()    

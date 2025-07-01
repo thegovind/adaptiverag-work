@@ -140,20 +140,20 @@ export function useChatStream(mode: string) {
                   });
                 }
                 
-                if (data.citations) {
+                if (data.type === 'citations' && data.citations) {
                   setCitations(data.citations);
                 }
                 
-                if (data.query_rewrites) {
-                  setQueryRewrites(data.query_rewrites);
+                if (data.type === 'query_rewrites' && data.rewrites) {
+                  setQueryRewrites(data.rewrites);
                 }
                 
-                if (data.token_usage) {
-                  setTokenUsage(data.token_usage);
+                if (data.type === 'token_usage' && data.usage) {
+                  setTokenUsage(data.usage);
                 }
                 
-                if (data.processing_metadata) {
-                  setProcessingMetadata(data.processing_metadata);
+                if (data.type === 'metadata' && data.processing) {
+                  setProcessingMetadata(data.processing);
                 }
                 
                 if (data.done) {
