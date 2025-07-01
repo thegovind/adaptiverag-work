@@ -28,7 +28,7 @@ class VerifierAgent:
         for doc in retrieved_docs:
             try:
                 confidence = await self._assess_credibility_with_ai(doc, query)
-            except:
+            except Exception:
                 confidence = self._assess_credibility(doc, query)
             
             doc["confidence"] = confidence
@@ -64,7 +64,7 @@ Respond with only a number between 0.0 and 1.0."""
             
             score_text = response.choices[0].message.content.strip()
             return min(max(float(score_text), 0.0), 1.0)
-        except:
+        except Exception:
             return self._assess_credibility(doc, query)
     
     def _assess_credibility(self, doc: Dict, query: str) -> float:

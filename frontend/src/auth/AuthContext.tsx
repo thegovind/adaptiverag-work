@@ -3,7 +3,7 @@ import { useMsal, useAccount } from '@azure/msal-react';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: any;
+  user: DemoUser | Record<string, unknown> | null;
   login: () => void;
   logout: () => void;
   getAccessToken: () => Promise<string | null>;

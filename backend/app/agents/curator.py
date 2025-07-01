@@ -73,8 +73,8 @@ class CuratorAgent:
             return "Meta"
         elif "jpmc" in filename_lower or "jpmorgan" in filename_lower:
             return "JPMC"
-        elif "citi" in filename_lower:
-            return "Citi"
+        elif "microsoft" in filename_lower:
+            return "Microsoft"
         else:
             return "Unknown"
     

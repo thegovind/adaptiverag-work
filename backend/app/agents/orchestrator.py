@@ -5,7 +5,6 @@ from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import
 from semantic_kernel.contents import ChatMessageContent
 from typing import List, Dict, AsyncIterator, Optional
 import asyncio
-import json
 from ..core.config import settings
 from .registry import AgentRegistry
 
@@ -81,9 +80,16 @@ class OrchestratorAgent:
             print("Warning: No chat completion service available for SK agents")
         
     async def create_plan(self, request: Dict) -> List[str]:
-        mode = request.get("mode", "context-aware-generation")
+        mode = request.get("mode", "fast-rag")
         
-        if mode == "context-aware-generation":
+        if mode == "fast-rag":
+            return ["RetrieverAgent", "WriterAgent"]
+        elif mode == "agentic-rag":
+            return ["AgenticVectorRAGAgent", "WriterAgent"]
+        elif mode == "deep-research-rag":
+            return ["RetrieverAgent", "VerifierAgent", "AgenticVectorRAGAgent", "WriterAgent"]
+        
+        elif mode == "context-aware-generation":
             return ["RetrieverAgent", "WriterAgent"]
         elif mode == "qa-verification":
             return ["RetrieverAgent", "VerifierAgent", "WriterAgent"]
