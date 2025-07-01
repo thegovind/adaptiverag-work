@@ -267,6 +267,7 @@ class AzureServiceManager:
         fields = [
             # Core fields
             SimpleField(name="id", type=SearchFieldDataType.String, key=True),
+            SimpleField(name="chunk_id", type=SearchFieldDataType.String, filterable=True, sortable=True),
             SearchableField(name="content", type=SearchFieldDataType.String, analyzer_name="en.microsoft"),
             SearchableField(name="title", type=SearchFieldDataType.String),
             SearchableField(name="source", type=SearchFieldDataType.String, filterable=True, facetable=True),
@@ -784,4 +785,4 @@ async def get_azure_service_manager() -> AzureServiceManager:
 
 async def cleanup_azure_services():
     """Cleanup Azure services"""
-    await azure_service_manager.cleanup()                
+    await azure_service_manager.cleanup()                  

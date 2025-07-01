@@ -185,7 +185,7 @@ class ModularProcessor:
                     content=text,
                     source=filename,
                     company="Unknown",
-                    year=2024
+                    year="2024"
                 )
                 
                 self.logger.info(f"Using proper chunking, created {len(proper_chunks)} chunks")
@@ -207,7 +207,7 @@ class ModularProcessor:
                 "metadata": {
                     "company": "Unknown",
                     "document_type": "Document", 
-                    "year": 2024,
+                    "year": "2024",
                     "filename": filename,
                     "total_chunks": len(chunks),
                     "content_length": len(text),
@@ -227,7 +227,7 @@ class ModularProcessor:
                 "metadata": {
                     "company": "Unknown",
                     "document_type": "Document",
-                    "year": 2024,
+                    "year": "2024",
                     "filename": filename,
                     "total_chunks": 0,
                     "content_length": 0,
