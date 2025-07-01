@@ -4,7 +4,6 @@ from typing import Dict, Any, Optional
 from semantic_kernel.agents import ChatCompletionAgent
 from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import AzureChatCompletion
 from semantic_kernel.kernel import Kernel
-from semantic_kernel.functions import kernel_function
 from ..core.config import settings
 from .tools import SearchTools
 

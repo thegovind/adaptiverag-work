@@ -1,89 +1,52 @@
-from azure.search.documents import SearchClient
-from azure.search.documents.indexes import SearchIndexClient
-from azure.search.documents.indexes.models import (
-    SearchIndex,
-    SearchField,
-    SearchFieldDataType,
-    SimpleField,
-    SearchableField,
-    VectorSearch,
-    HnswAlgorithmConfiguration,
-    VectorSearchProfile,
-    SemanticConfiguration,
-    SemanticPrioritizedFields,
-    SemanticField,
-    SemanticSearch
-)
-from azure.core.credentials import AzureKeyCredential
 from typing import List, Dict
 import asyncio
+import logging
 from ..core.config import settings
+from ..services.azure_services import get_azure_service_manager
+
+logger = logging.getLogger(__name__)
 
 async def create_search_index():
-    index_client = SearchIndexClient(
-        endpoint=settings.search_endpoint,
-        credential=AzureKeyCredential(settings.search_admin_key)
-    )
-    
-    fields = [
-        SimpleField(name="id", type=SearchFieldDataType.String, key=True),
-        SearchableField(name="content", type=SearchFieldDataType.String),
-        SimpleField(name="source", type=SearchFieldDataType.String, filterable=True),
-        SimpleField(name="company", type=SearchFieldDataType.String, filterable=True, facetable=True),
-        SimpleField(name="year", type=SearchFieldDataType.Int32, filterable=True, facetable=True),
-    ]
-    
-    vector_search = VectorSearch(
-        algorithms=[
-            HnswAlgorithmConfiguration(name="hnsw-config")
-        ],
-        profiles=[
-            VectorSearchProfile(
-                name="vector-profile",
-                algorithm_configuration_name="hnsw-config"
-            )
-        ]
-    )
-    
-    semantic_config = SemanticConfiguration(
-        name="default",
-        prioritized_fields=SemanticPrioritizedFields(
-            content_fields=[SemanticField(field_name="content")]
-        )
-    )
-    
-    semantic_search = SemanticSearch(configurations=[semantic_config])
-    
-    index = SearchIndex(
-        name=settings.search_index,
-        fields=fields,
-        vector_search=vector_search,
-        semantic_search=semantic_search
-    )
-    
+    """
+    Create or update the search index - uses the new Azure Service Manager
+    """
     try:
-        result = index_client.create_or_update_index(index)
-        print(f"Created/updated index: {result.name}")
-        return result
+        azure_service = await get_azure_service_manager()
+        result = await azure_service.ensure_search_index_exists()
+        
+        if result:
+            logger.info("Search index created/updated successfully")
+            return {"status": "success", "message": "Index created/updated"}
+        else:
+            logger.error("Failed to create/update search index")
+            return {"status": "error", "message": "Failed to create index"}
     except Exception as e:
-        print(f"Error creating index: {e}")
-        return None
+        logger.error(f"Error creating index: {e}")
+        return {"status": "error", "message": str(e)}
 
 async def upsert_chunks(chunks: List[Dict]):
-    search_client = SearchClient(
-        endpoint=settings.search_endpoint,
-        index_name=settings.search_index,
-        credential=AzureKeyCredential(settings.search_admin_key)
-    )
-    
+    """
+    Upload chunks to Azure Search with enhanced logging and error handling
+    Now uses the centralized Azure Service Manager
+    """
     try:
-        batch_size = 100
-        for i in range(0, len(chunks), batch_size):
-            batch = chunks[i:i + batch_size]
-            result = search_client.upload_documents(documents=batch)
-            print(f"Uploaded batch {i//batch_size + 1}: {len(batch)} documents")
-            await asyncio.sleep(0.1)
+        if not chunks:
+            logger.warning("No chunks provided for upload")
+            return
         
-        print(f"Successfully uploaded {len(chunks)} chunks to search index")
+        logger.info(f"Starting upload of {len(chunks)} chunks using Azure Service Manager")
+        
+        # Use the centralized Azure Service Manager
+        azure_service = await get_azure_service_manager()
+        result = await azure_service.add_documents_to_index(chunks)
+        
+        if result:
+            logger.info(f"Successfully uploaded {len(chunks)} chunks to search index")
+        else:
+            logger.error(f"Failed to upload chunks to search index")
+            
+        return result
+        
     except Exception as e:
-        print(f"Error uploading chunks: {e}")
+        logger.error(f"Critical error during chunk upload: {str(e)}")
+        raise

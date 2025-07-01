@@ -313,6 +313,26 @@ isodate = ">=0.6.1"
 typing-extensions = ">=4.6.0"
 
 [[package]]
+name = "azure-ai-inference"
+version = "1.0.0b9"
+description = "Microsoft Azure AI Inference Client Library for Python"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "azure_ai_inference-1.0.0b9-py3-none-any.whl", hash = "sha256:49823732e674092dad83bb8b0d1b65aa73111fab924d61349eb2a8cdc0493990"},
+    {file = "azure_ai_inference-1.0.0b9.tar.gz", hash = "sha256:1feb496bd84b01ee2691befc04358fa25d7c344d8288e99364438859ad7cd5a4"},
+]
+
+[package.dependencies]
+azure-core = ">=1.30.0"
+isodate = ">=0.6.1"
+typing-extensions = ">=4.6.0"
+
+[package.extras]
+opentelemetry = ["azure-core-tracing-opentelemetry"]
+prompts = ["pyyaml"]
+
+[[package]]
 name = "azure-ai-projects"
 version = "1.0.0b12"
 description = "Microsoft Azure AI Projects Client Library for Python"
@@ -3761,4 +3781,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "e13b82c383f0d5bad00233c232f34e7dbaa0d9eedf6d6cbcc19514f842ffdad8"
+content-hash = "cac0ee466f960843e67c8179fa6fef0b6704fb226ee0c021907e3d3ee40dcf4f"

@@ -1,5 +1,5 @@
 from semantic_kernel.functions import kernel_function
-from typing import Annotated, List, Dict
+from typing import Annotated
 from azure.search.documents import SearchClient
 from azure.search.documents.models import QueryType
 from azure.core.credentials import AzureKeyCredential

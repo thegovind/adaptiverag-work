@@ -55,7 +55,7 @@ Please provide a comprehensive answer with proper citations."""
                 yield char
                 await asyncio.sleep(0.01)
                 
-        except Exception as e:
+        except Exception:
             async for chunk in self._generate_mock_stream(retrieved_docs, query):
                 yield chunk
     

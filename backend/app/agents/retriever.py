@@ -71,7 +71,7 @@ class RetrieverAgent:
             return self._generate_mock_documents(query)
     
     def _generate_mock_documents(self, query: str) -> List[Dict]:
-        companies = ["Apple", "Microsoft", "Google", "Meta", "JPMC", "Citi"]
+        companies = ["Apple", "Microsoft", "Google", "Meta", "JPMC", "Amazon"]
         years = [2024, 2023, 2022, 2021]
         
         docs = []

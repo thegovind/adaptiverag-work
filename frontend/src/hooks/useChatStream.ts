@@ -7,15 +7,49 @@ interface Message {
   timestamp: Date;
 }
 
-const ensureTimestamp = (message: any): Message => ({
-  role: message.role || 'assistant',
-  content: message.content || '',
-  timestamp: message.timestamp || new Date()
-});
+interface Citation {
+  id: string;
+  title: string;
+  content: string;
+  source: string;
+  url?: string;
+  score?: number;
+  verification?: boolean;
+}
+
+interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  model?: string;
+  cost?: number;
+  error?: string;
+}
+
+interface ProcessingMetadata {
+  processing_time_ms: number;
+  retrieval_method: string;
+  success: boolean;
+}
+
+interface ChatResponse {
+  messages: Message[];
+  citations: Citation[];
+  queryRewrites: string[];
+  tokenUsage?: TokenUsage;
+  processingMetadata?: ProcessingMetadata;
+  isStreaming: boolean;
+}
+
 
 export function useChatStream(mode: string) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [citations, setCitations] = useState<Citation[]>([]);
+  const [queryRewrites, setQueryRewrites] = useState<string[]>([]);
+  const [tokenUsage, setTokenUsage] = useState<TokenUsage | undefined>();
+  const [processingMetadata, setProcessingMetadata] = useState<ProcessingMetadata | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const { getAccessToken } = useAuth();
 
   const sendMessage = useCallback(async (content: string) => {
@@ -27,6 +61,12 @@ export function useChatStream(mode: string) {
     
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    setIsStreaming(true);
+    
+    setCitations([]);
+    setQueryRewrites([]);
+    setTokenUsage(undefined);
+    setProcessingMetadata(undefined);
 
     try {
       // Get access token (will be 'demo-token' in demo mode)
@@ -100,7 +140,24 @@ export function useChatStream(mode: string) {
                   });
                 }
                 
+                if (data.citations) {
+                  setCitations(data.citations);
+                }
+                
+                if (data.query_rewrites) {
+                  setQueryRewrites(data.query_rewrites);
+                }
+                
+                if (data.token_usage) {
+                  setTokenUsage(data.token_usage);
+                }
+                
+                if (data.processing_metadata) {
+                  setProcessingMetadata(data.processing_metadata);
+                }
+                
                 if (data.done) {
+                  setIsStreaming(false);
                   break;
                 }
               } catch (parseError) {
@@ -119,12 +176,31 @@ export function useChatStream(mode: string) {
       }]);
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   }, [mode, getAccessToken]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    setCitations([]);
+    setQueryRewrites([]);
+    setTokenUsage(undefined);
+    setProcessingMetadata(undefined);
   }, []);
 
-  return { messages, isLoading, sendMessage, clearMessages };
+  const chatResponse: ChatResponse = {
+    messages,
+    citations,
+    queryRewrites,
+    tokenUsage,
+    processingMetadata,
+    isStreaming
+  };
+
+  return { 
+    ...chatResponse,
+    isLoading, 
+    sendMessage, 
+    clearMessages 
+  };
 }
