@@ -49,8 +49,8 @@ function Navigation() {
         {/* Top header with logo and actions */}
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-microsoft-blue to-microsoft-blue-dark rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">AR</span>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+              <img src="/arag-icon-48.png" alt="Adaptive RAG" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-microsoft-gray">Adaptive RAG Workbench</h1>
