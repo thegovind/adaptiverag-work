@@ -2,7 +2,7 @@ import os
 import httpx
 from fastapi import Request, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from python_jose import jwt, jwk
+from jose import jwt, jwk
 from typing import Optional
 
 TENANT_ID = os.getenv("TENANT_ID")
