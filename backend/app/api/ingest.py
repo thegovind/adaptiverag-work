@@ -387,7 +387,7 @@ async def upload_file_with_progress(session_id: str, file: UploadFile = File(...
             await asyncio.sleep(0.1)
             status_callback({
                 "step": "RECEIVED",
-                "message": f"📄 File received: {filename} ({file_extension.upper()}) - validating...",
+                "message": f"📄 File received: {file.filename} ({file_extension.upper()}) - validating...",
                 "progress": 3
             })
             
