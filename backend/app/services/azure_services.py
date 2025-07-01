@@ -171,20 +171,20 @@ class AzureServiceManager:
                 logger.warning("Document Intelligence endpoint not configured")
                 self.form_recognizer_client = None
             
-            # Initialize OpenAI clients
+            # Initialize OpenAI clients with updated API version
             if hasattr(settings, 'openai_endpoint') and settings.openai_endpoint:
                 self.openai_client = AzureOpenAI(
                     azure_endpoint=settings.openai_endpoint,
                     api_key=settings.openai_key,
-                    api_version="2024-02-01"
+                    api_version=settings.openai_api_version
                 )
                 
                 self.async_openai_client = AsyncAzureOpenAI(
                     azure_endpoint=settings.openai_endpoint,
                     api_key=settings.openai_key,
-                    api_version="2024-02-01"
+                    api_version=settings.openai_api_version
                 )
-                logger.info("Azure OpenAI clients initialized")
+                logger.info(f"Azure OpenAI clients initialized with API version {settings.openai_api_version}")
             else:
                 logger.warning("Azure OpenAI endpoint not configured")
                 self.openai_client = None
@@ -784,4 +784,4 @@ async def get_azure_service_manager() -> AzureServiceManager:
 
 async def cleanup_azure_services():
     """Cleanup Azure services"""
-    await azure_service_manager.cleanup()              
+    await azure_service_manager.cleanup()                
