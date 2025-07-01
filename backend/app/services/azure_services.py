@@ -102,7 +102,7 @@ class AzureServiceManager:
         self.openai_client = None
         self.async_openai_client = None
         self.credential = None
-        self._use_mock = os.getenv("MOCK_AZURE_SERVICES", "true").lower() == "true"
+        self._use_mock = os.getenv("MOCK_AZURE_SERVICES", "false").lower() == "true"
         
     async def initialize(self):
         """Initialize all Azure services"""
@@ -171,20 +171,20 @@ class AzureServiceManager:
                 logger.warning("Document Intelligence endpoint not configured")
                 self.form_recognizer_client = None
             
-            # Initialize OpenAI clients
+            # Initialize OpenAI clients with updated API version
             if hasattr(settings, 'openai_endpoint') and settings.openai_endpoint:
                 self.openai_client = AzureOpenAI(
                     azure_endpoint=settings.openai_endpoint,
-                    api_key=getattr(settings, 'openai_api_key', ''),
-                    api_version=getattr(settings, 'openai_api_version', '2024-02-01')
+                    api_key=settings.openai_key,
+                    api_version=settings.openai_api_version
                 )
                 
                 self.async_openai_client = AsyncAzureOpenAI(
                     azure_endpoint=settings.openai_endpoint,
-                    api_key=getattr(settings, 'openai_api_key', ''),
-                    api_version=getattr(settings, 'openai_api_version', '2024-02-01')
+                    api_key=settings.openai_key,
+                    api_version=settings.openai_api_version
                 )
-                logger.info("Azure OpenAI clients initialized")
+                logger.info(f"Azure OpenAI clients initialized with API version {settings.openai_api_version}")
             else:
                 logger.warning("Azure OpenAI endpoint not configured")
                 self.openai_client = None
@@ -267,14 +267,15 @@ class AzureServiceManager:
         fields = [
             # Core fields
             SimpleField(name="id", type=SearchFieldDataType.String, key=True),
+            SimpleField(name="chunk_id", type=SearchFieldDataType.String, filterable=True, sortable=True),
             SearchableField(name="content", type=SearchFieldDataType.String, analyzer_name="en.microsoft"),
             SearchableField(name="title", type=SearchFieldDataType.String),
-            SimpleField(name="source", type=SearchFieldDataType.String, filterable=True, facetable=True),
+            SearchableField(name="source", type=SearchFieldDataType.String, filterable=True, facetable=True),
             
             # Document metadata
-            SimpleField(name="company", type=SearchFieldDataType.String, filterable=True, facetable=True),
-            SimpleField(name="year", type=SearchFieldDataType.Int32, filterable=True, facetable=True),
-            SimpleField(name="document_type", type=SearchFieldDataType.String, filterable=True, facetable=True),
+            SearchableField(name="company", type=SearchFieldDataType.String, filterable=True, facetable=True),
+            SimpleField(name="year", type=SearchFieldDataType.String, filterable=True, facetable=True),
+            SearchableField(name="document_type", type=SearchFieldDataType.String, filterable=True, facetable=True),
             SimpleField(name="filing_date", type=SearchFieldDataType.String, filterable=True, sortable=True),
             
             # Content analysis fields
@@ -644,16 +645,12 @@ class AzureServiceManager:
                     }
                 }
             
-            # Get total document count
-            search_results = self.async_search_client.search(
+            # Get total document count using sync client for simplicity
+            search_results = self.search_client.search(
                 "*", 
                 include_total_count=True, 
                 top=0
             )
-            
-            total_documents = 0
-            async for _ in search_results:
-                pass  # Just iterate to get the count
             
             try:
                 total_documents = search_results.get_count()
@@ -788,4 +785,4 @@ async def get_azure_service_manager() -> AzureServiceManager:
 
 async def cleanup_azure_services():
     """Cleanup Azure services"""
-    await azure_service_manager.cleanup() 
+    await azure_service_manager.cleanup()                  
