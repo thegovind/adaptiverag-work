@@ -14,6 +14,7 @@ from ..agents.curator import CuratorAgent
 from ..core.globals import initialize_kernel, get_agent_registry
 from ..auth.middleware import get_current_user
 from ..services.agentic_vector_rag_service import agentic_rag_service
+from ..services.azure_ai_agents_service import azure_ai_agents_service
 from ..services.token_usage_tracker import token_tracker
 
 router = APIRouter()
@@ -161,9 +162,9 @@ async def process_fast_rag(prompt: str, session_id: str) -> Dict[str, Any]:
             "citations": citations,
             "query_rewrites": [prompt],  # No rewrites in fast mode
             "token_usage": {
-                "prompt_tokens": len(prompt.split()),
-                "completion_tokens": len(answer.split()),
-                "total_tokens": len(prompt.split()) + len(answer.split())
+                "prompt_tokens": 0,  # Fast RAG doesn't use LLM, so no tokens
+                "completion_tokens": 0,
+                "total_tokens": 0
             },
             "processing_time_ms": 0,  # Will be calculated by caller
             "retrieval_method": "fast_rag",
@@ -180,38 +181,34 @@ async def process_fast_rag(prompt: str, session_id: str) -> Dict[str, Any]:
         }
 
 async def process_deep_research_rag(prompt: str, session_id: str, verification_level: str) -> Dict[str, Any]:
-    """Process Deep Research RAG mode with comprehensive verification"""
+    """Process Deep Research RAG mode using Azure AI Agents"""
     try:
-        agentic_result = await agentic_rag_service.process_question(
-            question=prompt,
-            rag_mode="deep-research-rag",
-            session_id=session_id
+        from ..services.token_usage_tracker import ServiceType, OperationType
+        
+        tracking_id = token_tracker.start_tracking(
+            session_id=session_id,
+            service_type=ServiceType.DEEP_RESEARCH_RAG,
+            operation_type=OperationType.ANSWER_GENERATION,
+            endpoint="/deep-research-rag",
+            rag_mode="deep-research-rag"
         )
         
-        verification_docs = await retriever.invoke(prompt)
+        agents_result = await azure_ai_agents_service.process_deep_research(
+            question=prompt,
+            session_id=session_id,
+            tracking_id=tracking_id
+        )
         
-        combined_citations = agentic_result.get("citations", [])
-        
-        for i, doc in enumerate(verification_docs[:2]):  # Add top 2 verification docs
-            combined_citations.append({
-                'id': str(len(combined_citations) + 1),
-                'title': doc.get('title', f'Verification Document {i + 1}'),
-                'content': doc.get('content', '')[:300],
-                'source': doc.get('source', ''),
-                'score': doc.get('score', 0.0),
-                'verification': True
-            })
-        
-        base_answer = agentic_result.get("answer", "")
-        verification_note = f"\n\n*This response has been enhanced with {verification_level} verification using additional sources.*"
+        base_answer = agents_result.get("answer", "")
+        verification_note = f"\n\n*This response has been generated using Azure AI Agents deep research with {verification_level} verification.*"
         
         return {
             "answer": base_answer + verification_note,
-            "citations": combined_citations,
-            "query_rewrites": agentic_result.get("query_rewrites", [prompt]),
-            "token_usage": agentic_result.get("token_usage", {}),
-            "processing_time_ms": agentic_result.get("processing_time_ms", 0),
-            "retrieval_method": "deep_research_rag",
+            "citations": agents_result.get("citations", []),
+            "query_rewrites": agents_result.get("query_rewrites", [prompt]),
+            "token_usage": agents_result.get("token_usage", {}),
+            "processing_time_ms": 0,  # Will be calculated by caller
+            "retrieval_method": "azure_ai_agents_deep_research",
             "verification_level": verification_level,
             "success": True
         }
