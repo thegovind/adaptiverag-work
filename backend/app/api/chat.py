@@ -16,6 +16,7 @@ from ..auth.middleware import get_current_user
 from ..services.agentic_vector_rag_service import agentic_rag_service
 from ..services.azure_ai_agents_service import azure_ai_agents_service
 from ..services.token_usage_tracker import token_tracker
+from ..services.azure_services import get_azure_service_manager
 
 router = APIRouter()
 
@@ -62,6 +63,15 @@ async def handle_rag_modes(request: ChatRequest, session_id: str, current_user: 
             if not agentic_rag_service.search_client:
                 await agentic_rag_service.initialize()
             
+            azure_service_manager = await get_azure_service_manager()
+            user_message = {
+                "role": "user",
+                "content": request.prompt,
+                "timestamp": datetime.utcnow().isoformat(),
+                "mode": request.mode
+            }
+            await azure_service_manager.save_session_history(session_id, user_message)
+            
             yield f"data: {json.dumps({'type': 'metadata', 'session_id': session_id, 'mode': request.mode, 'timestamp': datetime.utcnow().isoformat()})}\n\n"
             
             if request.mode == "agentic-rag":
@@ -103,6 +113,16 @@ async def handle_rag_modes(request: ChatRequest, session_id: str, current_user: 
                 'success': result.get('success', False)
             }
             yield f"data: {json.dumps({'type': 'metadata', 'processing': processing_metadata})}\n\n"
+            
+            assistant_message = {
+                "role": "assistant",
+                "content": answer,
+                "timestamp": datetime.utcnow().isoformat(),
+                "citations": citations,
+                "token_usage": token_usage,
+                "processing_metadata": processing_metadata
+            }
+            await azure_service_manager.save_session_history(session_id, assistant_message)
             
             yield f"data: {json.dumps({'type': 'done', 'session_id': session_id})}\n\n"
             
@@ -221,3 +241,65 @@ async def process_deep_research_rag(prompt: str, session_id: str, verification_l
             "token_usage": {"total_tokens": 0, "error": str(e)},
             "success": False
         }
+
+@router.get("/chat/sessions/{session_id}/history")
+async def get_session_history(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Get chat session history"""
+    try:
+        azure_service_manager = await get_azure_service_manager()
+        history = await azure_service_manager.get_session_history(session_id)
+        return {"session_id": session_id, "messages": history}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/chat/sessions/{session_id}")
+async def clear_session_history(session_id: str, current_user: dict = Depends(get_current_user)):
+    """Clear chat session history"""
+    try:
+        azure_service_manager = await get_azure_service_manager()
+        empty_session = {
+            "role": "system",
+            "content": "Session cleared",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        await azure_service_manager.save_session_history(f"{session_id}_cleared", empty_session)
+        return {"session_id": session_id, "status": "cleared"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/chat/sessions")
+async def list_user_sessions(current_user: dict = Depends(get_current_user)):
+    """List all sessions for the current user (placeholder implementation)"""
+    try:
+        return {"sessions": [], "message": "Session listing not yet implemented"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class FollowUpRequest(BaseModel):
+    original_question: str
+    answer: str
+    session_id: Optional[str] = None
+
+@router.post("/chat/follow-up-questions")
+async def generate_follow_up_questions(request: FollowUpRequest, current_user: dict = Depends(get_current_user)):
+    """Generate follow-up questions based on the original question and answer"""
+    try:
+        session_id = request.session_id or str(uuid.uuid4())
+        
+        if not azure_ai_agents_service.agents_client:
+            await azure_ai_agents_service.initialize()
+        
+        result = await azure_ai_agents_service.generate_follow_up_questions(
+            original_question=request.original_question,
+            answer=request.answer,
+            session_id=session_id
+        )
+        
+        return {
+            "session_id": session_id,
+            "follow_up_questions": result.get("follow_up_questions", []),
+            "token_usage": result.get("token_usage", {}),
+            "success": result.get("success", False)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

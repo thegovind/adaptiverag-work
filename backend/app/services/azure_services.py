@@ -7,6 +7,11 @@ try:
 except ImportError:
     # Fallback for missing document intelligence module
     DocumentIntelligenceClient = None
+try:
+    from azure.cosmos import CosmosClient
+except ImportError:
+    # Fallback for missing cosmos module
+    CosmosClient = None
 from azure.identity import DefaultAzureCredential, ClientSecretCredential
 from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI, AsyncAzureOpenAI
@@ -105,6 +110,7 @@ class AzureServiceManager:
         self.form_recognizer_client = None
         self.openai_client = None
         self.async_openai_client = None
+        self.cosmos_client = None
         self.credential = None
         self._use_mock = os.getenv("MOCK_AZURE_SERVICES", "false").lower() == "true"
         
@@ -210,6 +216,27 @@ class AzureServiceManager:
                     self.openai_client = None
                     self.async_openai_client = None
             
+            # Initialize CosmosDB client
+            if hasattr(settings, 'azure_cosmos_endpoint') and settings.azure_cosmos_endpoint:
+                try:
+                    if isinstance(self.search_credential, AzureKeyCredential):
+                        # For API key auth, we need a separate Cosmos key
+                        cosmos_credential = getattr(settings, 'azure_cosmos_key', '')
+                    else:
+                        cosmos_credential = self.credential
+                    
+                    self.cosmos_client = CosmosClient(
+                        url=settings.azure_cosmos_endpoint,
+                        credential=cosmos_credential
+                    )
+                    logger.info("CosmosDB client initialized")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize CosmosDB client: {e}")
+                    self.cosmos_client = None
+            else:
+                logger.warning("CosmosDB endpoint not configured")
+                self.cosmos_client = None
+            
             # Ensure search index exists
             await self.ensure_search_index_exists()
             
@@ -228,6 +255,7 @@ class AzureServiceManager:
         self.form_recognizer_client = MockDocumentIntelligenceClient()
         self.openai_client = MockOpenAIClient()
         self.async_openai_client = MockOpenAIClient()
+        self.cosmos_client = None  # Mock CosmosDB not needed for basic functionality
         self.credential = None
         self._use_mock = True
         
@@ -794,6 +822,62 @@ This mock document represents a typical 10-K annual report structure with financ
         else:
             return "Sample Financial Corporation"
 
+    async def save_session_history(self, session_id: str, message: Dict) -> bool:
+        """Save chat session history to CosmosDB"""
+        try:
+            if self._use_mock or not self.cosmos_client:
+                logger.info(f"Mock mode or CosmosDB not available - skipping session history save for {session_id}")
+                return True
+            
+            database = self.cosmos_client.get_database_client(settings.azure_cosmos_database_name)
+            container = database.get_container_client(settings.azure_cosmos_container_name)
+            
+            try:
+                session_doc = container.read_item(item=session_id, partition_key=session_id)
+            except:
+                session_doc = {
+                    "id": session_id,
+                    "messages": [],
+                    "created_at": message.get("timestamp"),
+                    "updated_at": message.get("timestamp")
+                }
+            session_doc["messages"].append(message)
+            session_doc["updated_at"] = message.get("timestamp")
+            
+            container.upsert_item(session_doc)
+            logger.info(f"Session {session_id} updated in CosmosDB")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to save session history: {e}")
+            return False
+
+    async def get_session_history(self, session_id: str) -> List[Dict]:
+        """Retrieve chat session history from CosmosDB"""
+        try:
+            if self._use_mock or not self.cosmos_client:
+                logger.info(f"Mock mode or CosmosDB not available - returning empty history for {session_id}")
+                return []
+            
+            database = self.cosmos_client.get_database_client(settings.azure_cosmos_database_name)
+            container = database.get_container_client(settings.azure_cosmos_container_name)
+            
+            try:
+                session_doc = container.read_item(item=session_id, partition_key=session_id)
+                return session_doc.get("messages", [])
+            except Exception as e:
+                # Session doesn't exist yet, return empty history
+                if "NotFound" in str(e) or "does not exist" in str(e):
+                    logger.info(f"Session {session_id} not found, returning empty history")
+                    return []
+                else:
+                    # Some other error occurred
+                    logger.error(f"Failed to retrieve session history: {e}")
+                    return []
+        except Exception as e:
+            logger.error(f"Failed to retrieve session history: {e}")
+            return []
+
 # Global service manager instance
 azure_service_manager = AzureServiceManager()
 
@@ -805,4 +889,4 @@ async def get_azure_service_manager() -> AzureServiceManager:
 
 async def cleanup_azure_services():
     """Cleanup Azure services"""
-    await azure_service_manager.cleanup() 
+    await azure_service_manager.cleanup()  

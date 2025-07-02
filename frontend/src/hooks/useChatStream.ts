@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
 interface Message {
@@ -39,6 +39,7 @@ interface ChatResponse {
   tokenUsage?: TokenUsage;
   processingMetadata?: ProcessingMetadata;
   isStreaming: boolean;
+  sessionId: string;
 }
 
 
@@ -50,7 +51,73 @@ export function useChatStream(mode: string) {
   const [processingMetadata, setProcessingMetadata] = useState<ProcessingMetadata | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
   const { getAccessToken } = useAuth();
+
+  useEffect(() => {
+    const storedSessionId = localStorage.getItem(`chat_session_${mode}`);
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+      loadSessionHistory(storedSessionId);
+    } else {
+      const newSessionId = generateSessionId();
+      setSessionId(newSessionId);
+      localStorage.setItem(`chat_session_${mode}`, newSessionId);
+    }
+  }, [mode]);
+
+  const generateSessionId = (): string => {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  const loadSessionHistory = async (sessionId: string) => {
+    try {
+      const token = await getAccessToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`/api/chat/sessions/${sessionId}/history`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const sessionMessages = data.messages || [];
+        
+        const convertedMessages: Message[] = sessionMessages.map((msg: any) => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.timestamp)
+        }));
+        
+        setMessages(convertedMessages);
+        
+        const lastAssistantMessage = sessionMessages
+          .filter((msg: any) => msg.role === 'assistant')
+          .pop();
+        
+        if (lastAssistantMessage) {
+          if (lastAssistantMessage.citations) {
+            setCitations(lastAssistantMessage.citations);
+          }
+          if (lastAssistantMessage.token_usage) {
+            setTokenUsage(lastAssistantMessage.token_usage);
+          }
+          if (lastAssistantMessage.processing_metadata) {
+            setProcessingMetadata(lastAssistantMessage.processing_metadata);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load session history:', error);
+    }
+  };
 
   const sendMessage = useCallback(async (content: string) => {
     const userMessage: Message = {
@@ -85,7 +152,8 @@ export function useChatStream(mode: string) {
         headers,
         body: JSON.stringify({ 
           prompt: content,
-          mode: mode
+          mode: mode,
+          session_id: sessionId
         }),
       });
 
@@ -188,19 +256,28 @@ export function useChatStream(mode: string) {
     setProcessingMetadata(undefined);
   }, []);
 
+  const startNewSession = useCallback(() => {
+    const newSessionId = generateSessionId();
+    setSessionId(newSessionId);
+    localStorage.setItem(`chat_session_${mode}`, newSessionId);
+    clearMessages();
+  }, [mode, clearMessages]);
+
   const chatResponse: ChatResponse = {
     messages,
     citations,
     queryRewrites,
     tokenUsage,
     processingMetadata,
-    isStreaming
+    isStreaming,
+    sessionId
   };
 
   return { 
     ...chatResponse,
     isLoading, 
     sendMessage, 
-    clearMessages 
+    clearMessages,
+    startNewSession
   };
 }
