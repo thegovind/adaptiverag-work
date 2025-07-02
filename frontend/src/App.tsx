@@ -17,7 +17,7 @@ import './App.css';
 function Navigation() {
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path || (path === '/context-aware-generation' && location.pathname === '/');
 
   const navItems = [
     {
@@ -50,7 +50,7 @@ function Navigation() {
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-              <img src="/arag-icon-48.png" alt="Adaptive RAG" className="w-full h-full object-contain" />
+              <MicrosoftLogo className="scale-50" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-microsoft-gray">Adaptive RAG Workbench</h1>
